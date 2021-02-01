@@ -1,21 +1,79 @@
-import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar'
+import React, { useEffect, useState } from 'react'
+import { StyleSheet, View, ActivityIndicator, Button } from 'react-native'
+import { ErrorMessage, Search, Widget } from './components'
+import { OpenWeatherData } from './services'
+import OpenWeather from './services/open-weather/open-weather'
+import * as Location from 'expo-location'
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+    const [data, setData] = useState<OpenWeatherData>({})
+    const [value, setValue] = useState<string>('')
+    const [pending, setPending] = useState<boolean>(false)
+
+    const weather = new OpenWeather()
+
+    const getWeather = async (value: string | { lat: number; lon: number }) => {
+        setPending(true)
+        const response = await weather.getWeather(value)
+        setData(response)
+        setPending(false)
+    }
+
+    const getCurrentLocation = async () => {
+        const { status } = await Location.requestPermissionsAsync()
+
+        if (status !== 'granted') {
+            console.error('Permission to access location was denied')
+            return
+        }
+
+        const currentLocation: Location.LocationObject = await Location.getCurrentPositionAsync()
+
+        if (currentLocation) {
+            getWeather({
+                lat: currentLocation.coords.latitude,
+                lon: currentLocation.coords.longitude,
+            })
+        }
+    }
+
+    useEffect(() => {
+        getCurrentLocation()
+    }, [])
+
+    // console.log('data:', data)
+
+    return (
+        <View style={styles.app}>
+            <Search
+                value={value}
+                onChangeText={v => setValue(v)}
+                onPress={() => getWeather(value)}
+            />
+            {pending && <ActivityIndicator size="large" />}
+            {!pending &&
+                (data.cod && data.cod >= 200 && data.cod <= 299 ? (
+                    <Widget data={data} />
+                ) : (
+                    <ErrorMessage
+                        message={{ code: data.cod, text: data.message }}
+                    />
+                ))}
+
+            <StatusBar style="auto" />
+            <Button
+                title="Текущая геопозиция"
+                onPress={() => getCurrentLocation()}
+            />
+        </View>
+    )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+    app: {
+        backgroundColor: '#fff',
+        paddingVertical: 60,
+        paddingHorizontal: 20,
+    },
+})
