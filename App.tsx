@@ -42,30 +42,33 @@ export default function App() {
         getCurrentLocation()
     }, [])
 
-    // console.log('data:', data)
-
     return (
         <View style={styles.app}>
             <Search
                 value={value}
                 onChangeText={v => setValue(v)}
-                onPress={() => getWeather(value)}
+                onPress={() => {
+                    getWeather(value)
+                    setValue('')
+                }}
             />
-            {pending && <ActivityIndicator size="large" />}
-            {!pending &&
-                (data.cod && data.cod >= 200 && data.cod <= 299 ? (
-                    <Widget data={data} />
-                ) : (
-                    <ErrorMessage
-                        message={{ code: data.cod, text: data.message }}
-                    />
-                ))}
-
-            <StatusBar style="auto" />
+            <View style={styles.widget}>
+                {pending && <ActivityIndicator size="large" />}
+                {!pending &&
+                    (data.cod && data.cod >= 200 && data.cod <= 299 ? (
+                        <Widget data={data} />
+                    ) : (
+                        // <ErrorMessage
+                        //     message={{ code: data.cod, text: data.message }}
+                        // />
+                        null
+                    ))}
+            </View>
             <Button
                 title="Текущая геопозиция"
                 onPress={() => getCurrentLocation()}
             />
+            <StatusBar style="auto" />
         </View>
     )
 }
@@ -75,5 +78,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         paddingVertical: 60,
         paddingHorizontal: 20,
+    },
+    widget: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '80%',
     },
 })
